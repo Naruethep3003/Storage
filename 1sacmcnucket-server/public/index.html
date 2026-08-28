@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>1SacMcNucket — Image Archive</title>
+<style>
+  :root{
+    --paper:#efece3; --ink:#1c1a17; --charcoal:#2b2823;
+    --amber:#c98a3a; --amber-dim:#8a6229; --line: rgba(28,26,23,0.18);
+    --mono: 'Courier New', ui-monospace, SFMono-Regular, Menlo, monospace;
+    --serif: Georgia, 'Iowan Old Style', 'Times New Roman', serif;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--paper);
+    background-image: radial-gradient(circle at 1px 1px, rgba(28,26,23,0.05) 1px, transparent 0);
+    background-size: 22px 22px;
+    color:var(--ink); font-family:var(--mono);
+    min-height:100vh; padding: 40px 24px 80px;
+  }
+  header{
+    max-width: 1100px; margin: 0 auto 36px;
+    display:flex; justify-content:space-between; align-items:flex-end;
+    border-bottom: 2px solid var(--ink); padding-bottom: 14px;
+    flex-wrap: wrap; gap: 12px;
+  }
+  h1{ font-family: var(--serif); font-weight: 400; font-style: italic; font-size: 42px; margin:0; letter-spacing: 0.5px; }
+  .tag{ font-size:11px; letter-spacing:2px; text-transform:uppercase; color: var(--amber-dim); }
+  .count{ font-size: 12px; letter-spacing: 1px; text-transform: uppercase; color: var(--ink); opacity:0.6; }
+  main{max-width:1100px; margin:0 auto;}
+  .dropzone{
+    border: 2px dashed var(--line); border-radius: 2px; padding: 34px 20px;
+    text-align:center; cursor:pointer; position:relative;
+    transition: border-color .15s ease, background .15s ease;
+    background: rgba(255,255,255,0.25); margin-bottom: 40px;
+  }
+  .dropzone:hover, .dropzone.drag{ border-color: var(--amber); background: rgba(201,138,58,0.08); }
+  .dropzone .dz-title{ font-family: var(--serif); font-style: italic; font-size: 20px; margin-bottom: 6px; }
+  .dropzone .dz-sub{ font-size: 11px; letter-spacing: 1px; text-transform: uppercase; opacity: 0.55; }
+  input[type=file]{display:none;}
+  .sheet{ display:grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 22px; }
+  .frame{ background: var(--charcoal); padding: 10px 10px 0; border-radius: 1px; position: relative; box-shadow: 0 6px 14px rgba(0,0,0,0.18); }
+  .frame .sprockets{ display:flex; justify-content:space-between; padding: 0 2px 8px; }
+  .frame .sprockets span{ width:6px; height:6px; background: var(--paper); opacity:0.85; }
+  .frame .sprockets.bottom{padding: 8px 2px 0;}
+  .thumb-wrap{ aspect-ratio: 1/1; overflow:hidden; background:#000; cursor:pointer; }
+  .thumb-wrap img{ width:100%; height:100%; object-fit:cover; display:block; filter: contrast(1.02); }
+  .meta{ color: var(--paper); padding: 8px 4px 12px; display:flex; justify-content:space-between; align-items:center; gap:8px; }
+  .meta .name{ font-size: 11px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; opacity:0.85; }
+  .meta button{
+    background:none; border:1px solid var(--amber); color: var(--amber); font-family: var(--mono);
+    font-size: 10px; letter-spacing: 1px; text-transform: uppercase; padding: 4px 8px; cursor:pointer;
+    border-radius: 2px; flex-shrink:0;
+  }
+  .meta button:hover{ background: var(--amber); color: var(--charcoal); }
+  .empty{ text-align:center; padding: 60px 20px; opacity: 0.55; font-family: var(--serif); font-style: italic; font-size: 18px; }
+  .viewer{ position:fixed; inset:0; background: rgba(10,9,8,0.92); display:none; align-items:center; justify-content:center; z-index: 50; padding: 30px; }
+  .viewer.open{display:flex;}
+  .viewer img{ max-width: 90vw; max-height: 82vh; box-shadow: 0 20px 60px rgba(0,0,0,0.5); }
+  .viewer .close{
+    position:absolute; top: 22px; right: 30px; color: var(--paper); font-family: var(--mono);
+    font-size: 13px; letter-spacing: 2px; text-transform:uppercase; cursor:pointer;
+    border: 1px solid var(--paper); padding: 6px 12px; opacity: 0.8;
+  }
+  .viewer .close:hover{opacity:1; border-color: var(--amber); color: var(--amber);}
+  .viewer .cap{ position:absolute; bottom: 26px; color: var(--paper); font-size: 11px; letter-spacing: 1px; opacity: 0.7; }
+  .status{ max-width:1100px; margin: 0 auto 20px; font-size: 11px; letter-spacing: 1px; text-transform: uppercase; opacity: 0.5; min-height: 14px; }
+  footer{ max-width:1100px; margin:60px auto 0; padding-top:16px; border-top:1px solid var(--line); font-size:11px; letter-spacing:1px; text-transform:uppercase; opacity:0.5; }
+  @media (max-width: 480px){ h1{font-size:30px;} .sheet{grid-template-columns: repeat(auto-fill, minmax(140px,1fr));} }
+</style>
+</head>
+<body>
+
+<header>
+  <div>
+    <div class="tag">Personal · Server Archive</div>
+    <h1>1SacMcNucket</h1>
+  </div>
+  <div class="count" id="count">0 frames stored</div>
+</header>
+
+<main>
+  <div class="status" id="status"></div>
+
+  <div class="dropzone" id="dropzone">
+    <div class="dz-title">Drop images here, or click to select</div>
+    <div class="dz-sub">Stored on your server · JPG · PNG · WEBP · GIF</div>
+    <input type="file" id="fileInput" accept="image/*" multiple>
+  </div>
+
+  <div id="sheetContainer">
+    <div class="sheet" id="sheet"></div>
+  </div>
+</main>
+
+<footer>© 1SacMcNucket — Personal Archive</footer>
+
+<div class="viewer" id="viewer">
+  <div class="close" id="closeViewer">Close ✕</div>
+  <img id="viewerImg" src="" alt="">
+  <div class="cap" id="viewerCap"></div>
+</div>
+
+<script>
+const dropzone = document.getElementById('dropzone');
+const fileInput = document.getElementById('fileInput');
+const sheet = document.getElementById('sheet');
+const countEl = document.getElementById('count');
+const statusEl = document.getElementById('status');
+const viewer = document.getElementById('viewer');
+const viewerImg = document.getElementById('viewerImg');
+const viewerCap = document.getElementById('viewerCap');
+const closeViewer = document.getElementById('closeViewer');
+
+const API = ''; // same origin
+
+function setStatus(msg, timeout){
+  statusEl.textContent = msg;
+  if(timeout) setTimeout(()=>{ if(statusEl.textContent===msg) statusEl.textContent=''; }, timeout);
+}
+
+function escapeHtml(s){
+  const d = document.createElement('div');
+  d.textContent = s;
+  return d.innerHTML;
+}
+
+async function loadImages(){
+  setStatus('Loading archive…');
+  try{
+    const res = await fetch(API + '/api/images');
+    const images = await res.json();
+    render(images);
+    setStatus('', 800);
+  }catch(e){
+    console.error(e);
+    setStatus('Could not reach the server.');
+  }
+}
+
+function render(images){
+  countEl.textContent = images.length + (images.length===1 ? ' frame stored' : ' frames stored');
+  if(images.length===0){
+    sheet.innerHTML = '<div class="empty">The light table is empty. Add your first image above.</div>';
+    return;
+  }
+  sheet.innerHTML = '';
+  images.forEach(entry=>{
+    const frame = document.createElement('div');
+    frame.className = 'frame';
+    frame.innerHTML = `
+      <div class="sprockets">${'<span></span>'.repeat(8)}</div>
+      <div class="thumb-wrap"><img src="${entry.url}" alt="${escapeHtml(entry.name)}"></div>
+      <div class="sprockets bottom">${'<span></span>'.repeat(8)}</div>
+      <div class="meta">
+        <span class="name">${escapeHtml(entry.name)}</span>
+        <button data-id="${entry.id}" class="del">Remove</button>
+      </div>
+    `;
+    frame.querySelector('.thumb-wrap').addEventListener('click', ()=> openViewer(entry));
+    frame.querySelector('.del').addEventListener('click', async (ev)=>{
+      ev.stopPropagation();
+      await fetch(API + '/api/images/' + entry.id, { method: 'DELETE' });
+      loadImages();
+    });
+    sheet.appendChild(frame);
+  });
+}
+
+function openViewer(entry){
+  viewerImg.src = entry.url;
+  viewerCap.textContent = entry.name;
+  viewer.classList.add('open');
+}
+closeViewer.addEventListener('click', ()=> viewer.classList.remove('open'));
+viewer.addEventListener('click', (e)=>{ if(e.target===viewer) viewer.classList.remove('open'); });
+document.addEventListener('keydown', (e)=>{ if(e.key==='Escape') viewer.classList.remove('open'); });
+
+async function handleFiles(fileList){
+  const files = Array.from(fileList).filter(f=>f.type.startsWith('image/'));
+  if(files.length===0) return;
+  const form = new FormData();
+  files.forEach(f => form.append('images', f));
+  setStatus('Uploading ' + files.length + ' image' + (files.length>1?'s':'') + '…');
+  try{
+    const res = await fetch(API + '/api/images', { method: 'POST', body: form });
+    if(!res.ok){
+      const err = await res.json().catch(()=>({error:'Upload failed'}));
+      throw new Error(err.error || 'Upload failed');
+    }
+    await loadImages();
+    setStatus('Saved.', 1200);
+  }catch(e){
+    console.error(e);
+    setStatus(e.message, 3000);
+  }
+}
+
+dropzone.addEventListener('click', ()=> fileInput.click());
+fileInput.addEventListener('change', (e)=> handleFiles(e.target.files));
+['dragenter','dragover'].forEach(evt=>{
+  dropzone.addEventListener(evt, (e)=>{ e.preventDefault(); dropzone.classList.add('drag'); });
+});
+['dragleave','drop'].forEach(evt=>{
+  dropzone.addEventListener(evt, (e)=>{ e.preventDefault(); dropzone.classList.remove('drag'); });
+});
+dropzone.addEventListener('drop', (e)=>{
+  if(e.dataTransfer.files && e.dataTransfer.files.length) handleFiles(e.dataTransfer.files);
+});
+
+loadImages();
+</script>
+</body>
+</html>
